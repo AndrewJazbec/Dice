@@ -9,6 +9,11 @@
     "resources": {
         "media": [
             {
+                "file": "fonts/mypager2.ttf",
+                "name": "FONT_PIXEL_20",
+                "type": "font"
+            },
+            {
                 "file": "fonts/mypager.ttf",
                 "name": "FONT_PIXEL_33",
                 "type": "font"
