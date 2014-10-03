@@ -3,7 +3,9 @@
 Window *window;
 static GBitmap *image;
 BitmapLayer *die_layer;
-TextLayer *time_layer; 
+TextLayer *time_layer;
+const int i_h = 154, i_w = 864;
+int pub_fix = 0;
 
 //test
 void on_animation_stopped(Animation *anim, bool finished, void *context)
@@ -34,78 +36,85 @@ void animate_layer(Layer *layer, GRect *start, GRect *finish, int duration, int 
 
 // Called once per second
 static void handle_second_tick(struct tm* tick_time, TimeUnits units_changed) {
+  static char time_text[] = "00:00"; // Needs to be static because it's used by the system later.
   
-  strftime(time_text, sizeof(time_text), clock_is_24h_style()?"""%M", tick_time);
+  strftime(time_text, sizeof(time_text), clock_is_24h_style()?"%T":"%I:%M", tick_time);
   text_layer_set_text(time_layer, time_text);
   
   time_t now = time(NULL);
   struct tm *t = localtime(&now);
-  
-  GRect bounds = image->bounds;
-  
+    
   int minute = t->tm_min;
   int min6 = minute/10;
-  int fix = min6*144;
+  pub_fix = -(min6*144);
   
-  layer_set_frame(bitmap_layer_get_layer(die_layer), GRect(-fix, 0, 864, 154));
+  layer_set_frame(bitmap_layer_get_layer(die_layer), GRect(pub_fix, 0, i_w, i_h));
 }
 
 void tap_handler(AccelAxisType accel, int32_t direction) {
   
-  GRect start = GRect(110, 134, 144, 34);
-  GRect finish = GRect(0, 134, 144, 34);
-  animate_layer(text_layer_get_layer(battery_layer), &start, &finish, 200, 500);
+  GRect start = GRect(pub_fix, 0, i_w, i_h);
+  GRect finish = GRect(pub_fix, -120, i_w, i_h);
+  animate_layer(bitmap_layer_get_layer(die_layer), &start, &finish, 700, 0);
   
-  GRect start1 = GRect(0, 134, 144, 34);
-  GRect finish1 = GRect(110, 134, 144, 34);
-  animate_layer(text_layer_get_layer(battery_layer), &start1, &finish1, 200, 1700);
+  GRect start1 = GRect(pub_fix, -120, i_w, i_h);
+  GRect finish1 = GRect(pub_fix, 0, i_w, i_h);
+  animate_layer(bitmap_layer_get_layer(die_layer), &start1, &finish1, 700, 5000);
   
 }
 
-// Handle the start-up of the app
-static void do_init() {
-
-  // Create our app's base window
-  window = window_create();
-  window_stack_push(window, true);
-  window_set_background_color(window, GColorBlack);
+void window_load(Window *w){
+  Layer *root_layer = window_get_root_layer(w);
+  
+  time_layer = text_layer_create(GRect(0, 100, 144, 100));
+  text_layer_set_text_color(time_layer, GColorWhite);
+  text_layer_set_background_color(time_layer, GColorClear);
+  text_layer_set_text_alignment(time_layer, GTextAlignmentCenter);
+  text_layer_set_font(time_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
+  layer_add_child(root_layer, text_layer_get_layer(time_layer));
   
   image = gbitmap_create_with_resource(RESOURCE_ID_DICE_FACE);
   
-  time_layer = text_layer_create(GRect(0, 60, frame.size.w /* width */, 100/* height */));
-  text_layer_set_text_color(time_layer, GColorWhite);
-  text_layer_set_background_color(time_layer, GColorClear);
-  text_layer_set_font(time_layer, fonts_load_custom_font(font_handle));
-  text_layer_set_text_alignment(time_layer, GTextAlignmentCenter);
-  
-  die_layer = bitmap_layer_create(GRect(0, 0, 144, 168));
+  die_layer = bitmap_layer_create(GRect(-144, 0, 144, 168));
   bitmap_layer_set_bitmap(die_layer, image);
-  layer_add_child(window_get_root_layer(window), bitmap_layer_get_layer(die_layer));
+  layer_add_child(root_layer, bitmap_layer_get_layer(die_layer));
 
-  Layer *root_layer = window_get_root_layer(window);
+  //Layer *root_layer = window_get_root_layer(window);
   GRect frame = layer_get_frame(root_layer);
 
   time_t now = time(NULL);
   struct tm *current_time = localtime(&now);
   handle_second_tick(current_time, MINUTE_UNIT);
-
-  tick_timer_service_subscribe(MINUTE_UNIT, &handle_second_tick);
-  
-  layer_add_child(root_layer, text_layer_get_layer(time_layer));
-  
-  accel_tap_service_subscribe(tap_handler);
 }
 
-static void do_deinit() {
+void window_unload(Window *w){
+  gbitmap_destroy(image);
+  text_layer_destroy(time_layer);
+  bitmap_layer_destroy(die_layer);
+}
+
+void init() {
+  window = window_create();
+  window_set_background_color(window, GColorBlack);
+  window_set_window_handlers(window, (WindowHandlers){
+    .load = window_load,
+    .unload = window_unload,
+  });
+  accel_tap_service_subscribe(tap_handler);
+  tick_timer_service_subscribe(MINUTE_UNIT, &handle_second_tick);
+  window_stack_push(window, true);
+}
+
+static void deinit() {
   tick_timer_service_unsubscribe();
+  accel_tap_service_unsubscribe();
   text_layer_destroy(time_layer);
   window_destroy(window);
   
 }
 
-// The main event/run loop for our app
 int main(void) {
-  do_init();
+  init();
   app_event_loop();
-  do_deinit();
+  deinit();
 }
