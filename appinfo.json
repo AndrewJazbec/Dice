@@ -9,6 +9,11 @@
     "resources": {
         "media": [
             {
+                "file": "fonts/mypager.ttf",
+                "name": "FONT_PIXEL_33",
+                "type": "font"
+            },
+            {
                 "file": "images/dice_fix.png",
                 "name": "DICE_FACE",
                 "type": "png"
