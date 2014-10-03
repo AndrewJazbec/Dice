@@ -1,0 +1,25 @@
+{
+    "appKeys": {},
+    "capabilities": [
+        ""
+    ],
+    "companyName": "andrew.jazbec@gmail.com",
+    "longName": "Dice",
+    "projectType": "native",
+    "resources": {
+        "media": [
+            {
+                "file": "images/dice_fix.png",
+                "name": "DICE_FACE",
+                "type": "png"
+            }
+        ]
+    },
+    "shortName": "Dice",
+    "uuid": "411bc104-75d4-4294-9596-958af2020e9e",
+    "versionCode": 1,
+    "versionLabel": "1.0",
+    "watchapp": {
+        "watchface": true
+    }
+}
